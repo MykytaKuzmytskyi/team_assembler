@@ -5,10 +5,9 @@ from team.models import Team
 
 
 class TeamSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Team
-        fields = ['id', 'name', 'employees']
+        fields = ["id", "name", "employees"]
 
 
 class TeamListSerializer(TeamSerializer):

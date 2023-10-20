@@ -1,6 +1,3 @@
-from employee.models import Employee
-
-# admin.site.register(Employee)
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext as _
 from django.contrib import admin
