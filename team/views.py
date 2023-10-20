@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -18,10 +19,17 @@ class TeamViewSet(ModelViewSet):
         if serializer.is_valid():
             employee_ids = serializer.validated_data['employee_ids']
             employees = get_user_model().objects.filter(pk__in=employee_ids)
-            team.employees.add(*employees)
-            return Response({'message': 'Employees added to the team successfully'})
 
-        return Response(serializer.errors, status=400)
+            existing_employees = team.employees.filter(pk__in=employee_ids)
+            new_employees = employees.exclude(pk__in=existing_employees)
+
+            if new_employees:
+                team.employees.add(*new_employees)
+                emp = ', '.join([employee.get_full_name() for employee in new_employees])
+                return Response({'message': f'{emp} added to the team successfully'})
+            else:
+                return Response({'message': 'All specified employees are already in the team.'})
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['POST'])
     def remove_employees(self, request, pk=None):
@@ -30,11 +38,16 @@ class TeamViewSet(ModelViewSet):
 
         if serializer.is_valid():
             employee_ids = serializer.validated_data['employee_ids']
-            employees = get_user_model().objects.filter(pk__in=employee_ids)
-            team.employees.remove(*employees)
-            return Response({'message': 'Employees removed from the team successfully'})
+            employees_to_remove = team.employees.filter(pk__in=employee_ids)
 
-        return Response(serializer.errors, status=400)
+            if employees_to_remove:
+                team.employees.remove(*employees_to_remove)
+                emp = ', '.join([employee.get_full_name() for employee in employees_to_remove])
+                return Response({'message': f'{emp} removed from the team successfully'})
+
+            return Response({'message': 'No specified employees were found in the team.'})
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def get_serializer_class(self):
         if self.action in ['add_employees', 'remove_employees']:
